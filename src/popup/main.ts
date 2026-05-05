@@ -8,7 +8,7 @@ document.querySelector("#app")!.innerHTML = `
     <p>Perceptually linear volume for YouTube</p>
   </header>
   <label>
-    Enabled
+    Enable extension
     <input type="checkbox" id="enabled" hidden />
     <div class="switch"></div>
   </label>
@@ -33,6 +33,13 @@ chrome.storage.local.get([ENABLED_KEY, VOLUME_KEY], (result) => {
 // Request the current volume from the content script
 function queryCurrentVolume() {
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    const isYouTube = tab?.url?.includes("youtube.com") ?? false;
+
+    if (!isYouTube) {
+      document.querySelector("#app")!.classList.add("inactive");
+      return;
+    }
+
     if (tab?.id != null) {
       chrome.tabs.sendMessage(tab.id, { __sone: true, type: "get_volume" });
     }
@@ -41,6 +48,8 @@ function queryCurrentVolume() {
 
 // Write toggle to storage and redraw immediately
 checkbox.addEventListener("change", () => {
+  if (document.querySelector("#app")!.classList.contains("inactive")) return;
+
   chrome.storage.local.set({ [ENABLED_KEY]: checkbox.checked });
   drawChart(checkbox.checked, lastVolume);
   queryCurrentVolume();
